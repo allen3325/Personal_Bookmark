@@ -73,7 +73,8 @@ export function useBookmarks() {
       // Fetch metadata if no custom title provided
       const metadata = customTitle ? { title: customTitle } : await fetchPageMetadata(url)
 
-      const newBookmark = {
+      // Temporary bookmark for optimistic update (with temp ID)
+      const tempBookmark = {
         id: tempId, // Temporary ID for optimistic update
         user_id: user.id,
         url,
@@ -88,10 +89,11 @@ export function useBookmarks() {
       }
 
       // Optimistic update: Add bookmark immediately to UI
-      setBookmarks(prev => [newBookmark, ...prev])
+      setBookmarks(prev => [tempBookmark, ...prev])
 
-      // Create bookmark in database
-      const created = await createBookmark(newBookmark)
+      // Create bookmark in database (without the temp ID)
+      const { id, created_at, ...bookmarkData } = tempBookmark
+      const created = await createBookmark(bookmarkData)
 
       // Replace temporary bookmark with the real one
       setBookmarks(prev =>
