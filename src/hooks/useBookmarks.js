@@ -65,7 +65,7 @@ export function useBookmarks() {
     }
   }
 
-  const addBookmark = async (url, customTitle = null, customNotes = null) => {
+  const addBookmark = useCallback(async (url, customTitle = null, customNotes = null) => {
     try {
       // Fetch metadata if no custom title provided
       const metadata = customTitle ? { title: customTitle } : await fetchPageMetadata(url)
@@ -86,103 +86,194 @@ export function useBookmarks() {
     } catch (err) {
       throw new Error('Failed to add bookmark: ' + err.message)
     }
-  }
+  }, [user.id])
 
-  const editBookmark = async (id, updates) => {
+  const editBookmark = useCallback(async (id, updates) => {
+    // Optimistic update: Update UI immediately
+    setBookmarks(prev =>
+      prev.map(bookmark =>
+        bookmark.id === id ? { ...bookmark, ...updates } : bookmark
+      )
+    )
+
     try {
       const updated = await updateBookmark(id, updates)
       return updated
     } catch (err) {
+      // Revert on error - fetch fresh data
+      const data = await getBookmarks(user.id)
+      setBookmarks(data)
       throw new Error('Failed to update bookmark: ' + err.message)
     }
-  }
+  }, [user.id])
 
-  const removeBookmark = async (id) => {
+  const removeBookmark = useCallback(async (id) => {
+    // Optimistic update: Remove from UI immediately
+    setBookmarks(prev => prev.filter(bookmark => bookmark.id !== id))
+
     try {
       await deleteBookmark(id)
     } catch (err) {
+      // Revert on error - fetch fresh data
+      const data = await getBookmarks(user.id)
+      setBookmarks(data)
       throw new Error('Failed to delete bookmark: ' + err.message)
     }
-  }
+  }, [user.id])
 
-  const removeMultipleBookmarks = async (ids) => {
+  const removeMultipleBookmarks = useCallback(async (ids) => {
+    // Optimistic update: Remove from UI immediately
+    setBookmarks(prev => prev.filter(bookmark => !ids.includes(bookmark.id)))
+
     try {
       await deleteMultipleBookmarks(ids)
     } catch (err) {
+      // Revert on error - fetch fresh data
+      const data = await getBookmarks(user.id)
+      setBookmarks(data)
       throw new Error('Failed to delete bookmarks: ' + err.message)
     }
-  }
+  }, [user.id])
 
-  const changeStatus = async (id, status) => {
+  const changeStatus = useCallback(async (id, status) => {
+    // Optimistic update: Update UI immediately
+    setBookmarks(prev =>
+      prev.map(bookmark => {
+        if (bookmark.id === id) {
+          return {
+            ...bookmark,
+            status,
+            completed_at: status === 'completed' ? new Date().toISOString() : null
+          }
+        }
+        return bookmark
+      })
+    )
+
     try {
       const updated = await updateBookmarkStatus(id, status)
       return updated
     } catch (err) {
+      // Revert on error - fetch fresh data
+      const data = await getBookmarks(user.id)
+      setBookmarks(data)
       throw new Error('Failed to change status: ' + err.message)
     }
-  }
+  }, [user.id])
 
-  const togglePriority = async (id, currentPriority) => {
+  const togglePriority = useCallback(async (id, currentPriority) => {
+    const newPriority = currentPriority === 1 ? 0 : 1
+
+    // Optimistic update: Update UI immediately
+    setBookmarks(prev =>
+      prev.map(bookmark =>
+        bookmark.id === id ? { ...bookmark, priority: newPriority } : bookmark
+      )
+    )
+
     try {
-      const newPriority = currentPriority === 1 ? 0 : 1
       const updated = await updateBookmark(id, { priority: newPriority })
       return updated
     } catch (err) {
+      // Revert on error - fetch fresh data
+      const data = await getBookmarks(user.id)
+      setBookmarks(data)
       throw new Error('Failed to toggle priority: ' + err.message)
     }
-  }
+  }, [user.id])
 
-  const addTag = async (id, tag) => {
+  const addTag = useCallback(async (id, tag) => {
+    const bookmark = bookmarks.find(b => b.id === id)
+    if (!bookmark) throw new Error('Bookmark not found')
+
+    const tags = bookmark.tags || []
+    if (tags.includes(tag)) return bookmark
+
+    // Optimistic update: Update UI immediately
+    setBookmarks(prev =>
+      prev.map(b =>
+        b.id === id ? { ...b, tags: [...tags, tag] } : b
+      )
+    )
+
     try {
-      const bookmark = bookmarks.find(b => b.id === id)
-      if (!bookmark) throw new Error('Bookmark not found')
-
-      const tags = bookmark.tags || []
-      if (tags.includes(tag)) return bookmark
-
       const updated = await updateBookmark(id, { tags: [...tags, tag] })
       return updated
     } catch (err) {
+      // Revert on error - fetch fresh data
+      const data = await getBookmarks(user.id)
+      setBookmarks(data)
       throw new Error('Failed to add tag: ' + err.message)
     }
-  }
+  }, [bookmarks, user.id])
 
-  const removeTag = async (id, tag) => {
+  const removeTag = useCallback(async (id, tag) => {
+    const bookmark = bookmarks.find(b => b.id === id)
+    if (!bookmark) throw new Error('Bookmark not found')
+
+    const tags = (bookmark.tags || []).filter(t => t !== tag)
+
+    // Optimistic update: Update UI immediately
+    setBookmarks(prev =>
+      prev.map(b =>
+        b.id === id ? { ...b, tags } : b
+      )
+    )
+
     try {
-      const bookmark = bookmarks.find(b => b.id === id)
-      if (!bookmark) throw new Error('Bookmark not found')
-
-      const tags = (bookmark.tags || []).filter(t => t !== tag)
       const updated = await updateBookmark(id, { tags })
       return updated
     } catch (err) {
+      // Revert on error - fetch fresh data
+      const data = await getBookmarks(user.id)
+      setBookmarks(data)
       throw new Error('Failed to remove tag: ' + err.message)
     }
-  }
+  }, [bookmarks, user.id])
 
-  const markAllAsRead = async () => {
+  const markAllAsRead = useCallback(async () => {
+    const unreadBookmarks = bookmarks.filter(b => b.status === 'unread' || b.status === 'reading')
+
+    // Optimistic update: Update all unread to completed
+    setBookmarks(prev =>
+      prev.map(bookmark =>
+        bookmark.status === 'unread' || bookmark.status === 'reading'
+          ? { ...bookmark, status: 'completed', completed_at: new Date().toISOString() }
+          : bookmark
+      )
+    )
+
     try {
-      const unreadBookmarks = bookmarks.filter(b => b.status === 'unread')
       await Promise.all(
         unreadBookmarks.map(b => updateBookmarkStatus(b.id, 'completed'))
       )
     } catch (err) {
+      // Revert on error - fetch fresh data
+      const data = await getBookmarks(user.id)
+      setBookmarks(data)
       throw new Error('Failed to mark all as read: ' + err.message)
     }
-  }
+  }, [bookmarks, user.id])
 
-  const clearCompleted = async () => {
+  const clearCompleted = useCallback(async () => {
+    const completedIds = bookmarks
+      .filter(b => b.status === 'completed')
+      .map(b => b.id)
+
+    if (completedIds.length === 0) return
+
+    // Optimistic update: Remove completed bookmarks immediately
+    setBookmarks(prev => prev.filter(b => b.status !== 'completed'))
+
     try {
-      const completedIds = bookmarks
-        .filter(b => b.status === 'completed')
-        .map(b => b.id)
-      if (completedIds.length > 0) {
-        await removeMultipleBookmarks(completedIds)
-      }
+      await deleteMultipleBookmarks(completedIds)
     } catch (err) {
+      // Revert on error - fetch fresh data
+      const data = await getBookmarks(user.id)
+      setBookmarks(data)
       throw new Error('Failed to clear completed: ' + err.message)
     }
-  }
+  }, [bookmarks, user.id])
 
   return {
     bookmarks,
