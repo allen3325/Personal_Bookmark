@@ -66,11 +66,15 @@ export function useBookmarks() {
   }
 
   const addBookmark = useCallback(async (url, customTitle = null, customNotes = null) => {
+    // Generate a temporary ID for optimistic update
+    const tempId = `temp-${Date.now()}`
+
     try {
       // Fetch metadata if no custom title provided
       const metadata = customTitle ? { title: customTitle } : await fetchPageMetadata(url)
 
       const newBookmark = {
+        id: tempId, // Temporary ID for optimistic update
         user_id: user.id,
         url,
         title: customTitle || metadata.title || url,
@@ -79,11 +83,27 @@ export function useBookmarks() {
         status: 'unread',
         priority: 0,
         tags: [],
+        created_at: new Date().toISOString(),
+        completed_at: null,
       }
 
+      // Optimistic update: Add bookmark immediately to UI
+      setBookmarks(prev => [newBookmark, ...prev])
+
+      // Create bookmark in database
       const created = await createBookmark(newBookmark)
+
+      // Replace temporary bookmark with the real one
+      setBookmarks(prev =>
+        prev.map(bookmark =>
+          bookmark.id === tempId ? created : bookmark
+        )
+      )
+
       return created
     } catch (err) {
+      // Revert on error: Remove temporary bookmark
+      setBookmarks(prev => prev.filter(bookmark => bookmark.id !== tempId))
       throw new Error('Failed to add bookmark: ' + err.message)
     }
   }, [user.id])
