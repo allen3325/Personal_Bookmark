@@ -145,6 +145,24 @@ npm run build
 
 The production-ready files will be in the `dist` directory.
 
+## Deployment
+
+This project is configured for easy deployment to Netlify with automatic CI/CD.
+
+### Deploy to Netlify
+
+[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start)
+
+For detailed deployment instructions, see [DEPLOYMENT.md](./DEPLOYMENT.md).
+
+**Quick Setup:**
+1. Connect your GitHub repository to Netlify
+2. Netlify will automatically detect the `netlify.toml` configuration
+3. Set environment variables in Netlify dashboard:
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
+4. Deploy! Your app will automatically rebuild on every push to main branch
+
 ## Project Structure
 
 ```
