@@ -64,7 +64,7 @@ export const BookmarkCard = memo(function BookmarkCard({
   }
 
   return (
-    <Card hover className="p-5 transition-all">
+    <Card hover className="p-5 transition-all" data-testid="bookmark-card">
       <div className="flex items-start gap-4">
         {/* Favicon */}
         <div className="flex-shrink-0">
@@ -101,7 +101,7 @@ export const BookmarkCard = memo(function BookmarkCard({
             rel="noopener noreferrer"
             className="group flex items-start gap-2 mb-2"
           >
-            <h3 className="font-semibold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2">
+            <h3 className="font-semibold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2" data-testid="bookmark-title">
               {bookmark.title}
             </h3>
             <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 flex-shrink-0 mt-0.5" />
@@ -139,6 +139,7 @@ export const BookmarkCard = memo(function BookmarkCard({
                 onKeyPress={(e) => e.key === 'Enter' && handleAddTag()}
                 placeholder="New tag..."
                 className="px-2 py-1 text-sm border rounded dark:bg-gray-700 dark:border-gray-600"
+                data-testid="tag-input"
                 autoFocus
               />
               <button
@@ -199,6 +200,7 @@ export const BookmarkCard = memo(function BookmarkCard({
             onClick={cycleStatus}
             className={`p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${statusColor}`}
             title={statusConfig[bookmark.status]?.label}
+            data-testid="status-button"
           >
             <StatusIcon className="w-5 h-5" />
           </button>
@@ -211,6 +213,7 @@ export const BookmarkCard = memo(function BookmarkCard({
                 : 'text-gray-400'
             }`}
             title={bookmark.priority === 1 ? 'Unpin' : 'Pin'}
+            data-testid="priority-button"
           >
             <Star className={bookmark.priority === 1 ? 'fill-current' : ''} />
           </button>
@@ -219,6 +222,7 @@ export const BookmarkCard = memo(function BookmarkCard({
             onClick={() => onEdit(bookmark)}
             className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-400"
             title="Edit"
+            data-testid="edit-button"
           >
             <Edit2 className="w-5 h-5" />
           </button>
@@ -227,6 +231,7 @@ export const BookmarkCard = memo(function BookmarkCard({
             onClick={() => onDelete(bookmark.id)}
             className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-red-600 dark:text-red-400"
             title="Delete"
+            data-testid="delete-button"
           >
             <Trash2 className="w-5 h-5" />
           </button>

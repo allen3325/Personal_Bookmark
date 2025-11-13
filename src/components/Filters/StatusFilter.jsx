@@ -9,7 +9,7 @@ const statuses = [
 
 export function StatusFilter({ value, onChange, counts }) {
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-2" data-testid="status-filter">
       {statuses.map((status) => {
         const Icon = status.icon
         const count = counts?.[status.value] || 0
@@ -24,6 +24,7 @@ export function StatusFilter({ value, onChange, counts }) {
                 ? 'bg-blue-600 text-white'
                 : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
             }`}
+            data-testid={`status-${status.value}`}
           >
             {Icon && <Icon className="w-4 h-4" />}
             <span>{status.label}</span>
