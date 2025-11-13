@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, memo } from 'react'
 import {
   ExternalLink,
   Edit2,
@@ -32,7 +32,7 @@ const statusConfig = {
   },
 }
 
-export function BookmarkCard({
+export const BookmarkCard = memo(function BookmarkCard({
   bookmark,
   onEdit,
   onDelete,
@@ -234,4 +234,4 @@ export function BookmarkCard({
       </div>
     </Card>
   )
-}
+})
