@@ -135,6 +135,30 @@ npx playwright test -g "should add a new bookmark"
 - ✅ 失敗時上傳截圖（保留7天）
 - ✅ 在 PR 中評論測試結果
 
+### 設置 GitHub Secrets（必需）
+
+為了讓 CI/CD 測試正常運行，需要在 GitHub 儲存庫中設置以下 Secrets：
+
+1. 前往 GitHub 儲存庫的 **Settings** > **Secrets and variables** > **Actions**
+2. 點擊 **New repository secret**
+3. 添加以下 secrets：
+
+| Secret 名稱 | 說明 | 範例值 |
+|------------|------|--------|
+| `VITE_SUPABASE_URL` | Supabase 項目 URL | `https://xxxxx.supabase.co` |
+| `VITE_SUPABASE_ANON_KEY` | Supabase 匿名密鑰 | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...` |
+
+**獲取 Supabase 憑證：**
+1. 登錄 [Supabase Dashboard](https://app.supabase.com)
+2. 選擇你的項目
+3. 前往 **Settings** > **API**
+4. 複製 **Project URL** 和 **anon/public** key
+
+**注意：**
+- 如果不設置這些 secrets，工作流會使用佔位符值，測試可能會失敗
+- 建議為 CI 環境創建單獨的測試用 Supabase 項目
+- 永遠不要將真實的 Supabase 密鑰提交到代碼倉庫
+
 ### 查看 CI 測試結果
 
 1. 前往 GitHub Actions 標籤
