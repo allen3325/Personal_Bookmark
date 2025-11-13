@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { Download, Upload, Trash2, CheckCheck } from 'lucide-react'
 import { Header } from '../components/Layout/Header'
 import { AddBookmarkForm } from '../components/Bookmarks/AddBookmarkForm'
@@ -42,7 +42,7 @@ export function Home() {
   const [addingBookmark, setAddingBookmark] = useState(false)
 
   // Handle add bookmark
-  const handleAddBookmark = async (url, title, notes) => {
+  const handleAddBookmark = useCallback(async (url, title, notes) => {
     setAddingBookmark(true)
     try {
       await addBookmark(url, title, notes)
@@ -52,20 +52,20 @@ export function Home() {
     } finally {
       setAddingBookmark(false)
     }
-  }
+  }, [addBookmark, success, showError])
 
   // Handle edit bookmark
-  const handleEditBookmark = async (id, updates) => {
+  const handleEditBookmark = useCallback(async (id, updates) => {
     try {
       await editBookmark(id, updates)
       success('Bookmark updated successfully!')
     } catch (err) {
       showError(err.message)
     }
-  }
+  }, [editBookmark, success, showError])
 
   // Handle delete bookmark
-  const handleDeleteBookmark = async (id) => {
+  const handleDeleteBookmark = useCallback(async (id) => {
     if (!window.confirm('Are you sure you want to delete this bookmark?')) {
       return
     }
@@ -76,46 +76,46 @@ export function Home() {
     } catch (err) {
       showError(err.message)
     }
-  }
+  }, [removeBookmark, success, showError])
 
   // Handle status change
-  const handleStatusChange = async (id, status) => {
+  const handleStatusChange = useCallback(async (id, status) => {
     try {
       await changeStatus(id, status)
     } catch (err) {
       showError(err.message)
     }
-  }
+  }, [changeStatus, showError])
 
   // Handle toggle priority
-  const handleTogglePriority = async (id, currentPriority) => {
+  const handleTogglePriority = useCallback(async (id, currentPriority) => {
     try {
       await togglePriority(id, currentPriority)
     } catch (err) {
       showError(err.message)
     }
-  }
+  }, [togglePriority, showError])
 
   // Handle add tag
-  const handleAddTag = async (id, tag) => {
+  const handleAddTag = useCallback(async (id, tag) => {
     try {
       await addTag(id, tag)
     } catch (err) {
       showError(err.message)
     }
-  }
+  }, [addTag, showError])
 
   // Handle remove tag
-  const handleRemoveTag = async (id, tag) => {
+  const handleRemoveTag = useCallback(async (id, tag) => {
     try {
       await removeTag(id, tag)
     } catch (err) {
       showError(err.message)
     }
-  }
+  }, [removeTag, showError])
 
   // Handle mark all as read
-  const handleMarkAllAsRead = async () => {
+  const handleMarkAllAsRead = useCallback(async () => {
     if (!window.confirm('Mark all bookmarks as completed?')) {
       return
     }
@@ -126,10 +126,10 @@ export function Home() {
     } catch (err) {
       showError(err.message)
     }
-  }
+  }, [markAllAsRead, success, showError])
 
   // Handle clear completed
-  const handleClearCompleted = async () => {
+  const handleClearCompleted = useCallback(async () => {
     if (!window.confirm('Delete all completed bookmarks? This cannot be undone.')) {
       return
     }
@@ -140,22 +140,22 @@ export function Home() {
     } catch (err) {
       showError(err.message)
     }
-  }
+  }, [clearCompleted, success, showError])
 
   // Handle export to JSON
-  const handleExportJson = () => {
+  const handleExportJson = useCallback(() => {
     exportToJson(bookmarks, `bookmarks-${new Date().toISOString().split('T')[0]}.json`)
     success('Bookmarks exported to JSON!')
-  }
+  }, [bookmarks, success])
 
   // Handle export to CSV
-  const handleExportCsv = () => {
+  const handleExportCsv = useCallback(() => {
     exportToCsv(bookmarks, `bookmarks-${new Date().toISOString().split('T')[0]}.csv`)
     success('Bookmarks exported to CSV!')
-  }
+  }, [bookmarks, success])
 
   // Handle import
-  const handleImport = (e) => {
+  const handleImport = useCallback((e) => {
     const file = e.target.files?.[0]
     if (!file) return
 
@@ -200,7 +200,7 @@ export function Home() {
 
     reader.readAsText(file)
     e.target.value = '' // Reset file input
-  }
+  }, [addBookmark, success, showError])
 
   // Get all unique tags with counts
   const allTags = useMemo(() => {
@@ -285,11 +285,11 @@ export function Home() {
   }, [bookmarks, searchQuery, statusFilter, selectedTags, sortBy])
 
   // Toggle tag filter
-  const toggleTagFilter = (tag) => {
+  const toggleTagFilter = useCallback((tag) => {
     setSelectedTags((prev) =>
       prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
     )
-  }
+  }, [])
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
