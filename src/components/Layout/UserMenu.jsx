@@ -36,6 +36,7 @@ export function UserMenu() {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+        data-testid="user-menu"
       >
         <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
           <span className="text-white text-sm font-medium">
@@ -66,6 +67,7 @@ export function UserMenu() {
           <button
             onClick={handleSignOut}
             className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            data-testid="logout-button"
           >
             <LogOut className="w-4 h-4" />
             Sign Out
