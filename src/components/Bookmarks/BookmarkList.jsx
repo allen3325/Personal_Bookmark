@@ -10,6 +10,7 @@ export function BookmarkList({
   onAddTag,
   onRemoveTag,
   loading,
+  allTags = [],
 }) {
   if (loading) {
     return (
@@ -52,6 +53,7 @@ export function BookmarkList({
           onTogglePriority={onTogglePriority}
           onAddTag={onAddTag}
           onRemoveTag={onRemoveTag}
+          allTags={allTags}
         />
       ))}
     </div>

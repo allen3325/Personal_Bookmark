@@ -10,6 +10,7 @@ import { TagFilter } from '../components/Filters/TagFilter'
 import { SortDropdown } from '../components/Filters/SortDropdown'
 import { Button } from '../components/UI/Button'
 import { ToastContainer } from '../components/UI/Toast'
+import { ConfirmDialog } from '../components/UI/ConfirmDialog'
 import { useBookmarks } from '../hooks/useBookmarks'
 import { useToast } from '../hooks/useToast'
 import { exportToJson, exportToCsv, parseHtmlBookmarks } from '../lib/utils'
@@ -41,6 +42,14 @@ export function Home() {
   const [editingBookmark, setEditingBookmark] = useState(null)
   const [addingBookmark, setAddingBookmark] = useState(false)
 
+  // Confirm dialog states
+  const [confirmDialog, setConfirmDialog] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  })
+
   // Handle add bookmark
   const handleAddBookmark = useCallback(async (url, title, notes) => {
     setAddingBookmark(true)
@@ -65,17 +74,20 @@ export function Home() {
   }, [editBookmark, success, showError])
 
   // Handle delete bookmark
-  const handleDeleteBookmark = useCallback(async (id) => {
-    if (!window.confirm('Are you sure you want to delete this bookmark?')) {
-      return
-    }
-
-    try {
-      await removeBookmark(id)
-      success('Bookmark deleted successfully!')
-    } catch (err) {
-      showError(err.message)
-    }
+  const handleDeleteBookmark = useCallback((id) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Delete Bookmark',
+      message: 'Are you sure you want to delete this bookmark? This action cannot be undone.',
+      onConfirm: async () => {
+        try {
+          await removeBookmark(id)
+          success('Bookmark deleted successfully!')
+        } catch (err) {
+          showError(err.message)
+        }
+      },
+    })
   }, [removeBookmark, success, showError])
 
   // Handle status change
@@ -115,32 +127,43 @@ export function Home() {
   }, [removeTag, showError])
 
   // Handle mark all as read
-  const handleMarkAllAsRead = useCallback(async () => {
-    if (!window.confirm('Mark all bookmarks as completed?')) {
-      return
-    }
+  const handleMarkAllAsRead = useCallback(() => {
+    const unreadAndReadingCount = statusCounts.unread + statusCounts.reading
 
-    try {
-      await markAllAsRead()
-      success('All bookmarks marked as completed!')
-    } catch (err) {
-      showError(err.message)
-    }
-  }, [markAllAsRead, success, showError])
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Mark All as Completed',
+      message: `Are you sure you want to mark ${unreadAndReadingCount} bookmark${unreadAndReadingCount !== 1 ? 's' : ''} as completed?`,
+      onConfirm: async () => {
+        try {
+          await markAllAsRead()
+          success(`Successfully marked ${unreadAndReadingCount} bookmark${unreadAndReadingCount !== 1 ? 's' : ''} as completed!`)
+        } catch (err) {
+          showError(err.message)
+        }
+      },
+      variant: 'primary',
+    })
+  }, [markAllAsRead, success, showError, statusCounts])
 
   // Handle clear completed
-  const handleClearCompleted = useCallback(async () => {
-    if (!window.confirm('Delete all completed bookmarks? This cannot be undone.')) {
-      return
-    }
+  const handleClearCompleted = useCallback(() => {
+    const completedCount = statusCounts.completed
 
-    try {
-      await clearCompleted()
-      success('Completed bookmarks cleared!')
-    } catch (err) {
-      showError(err.message)
-    }
-  }, [clearCompleted, success, showError])
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Clear Completed Bookmarks',
+      message: `Are you sure you want to delete ${completedCount} completed bookmark${completedCount !== 1 ? 's' : ''}? This action cannot be undone.`,
+      onConfirm: async () => {
+        try {
+          await clearCompleted()
+          success(`Successfully deleted ${completedCount} completed bookmark${completedCount !== 1 ? 's' : ''}!`)
+        } catch (err) {
+          showError(err.message)
+        }
+      },
+    })
+  }, [clearCompleted, success, showError, statusCounts])
 
   // Handle export to JSON
   const handleExportJson = useCallback(() => {
@@ -391,6 +414,7 @@ export function Home() {
           onAddTag={handleAddTag}
           onRemoveTag={handleRemoveTag}
           loading={loading}
+          allTags={allTags}
         />
 
         {/* Edit Modal */}
@@ -403,6 +427,16 @@ export function Home() {
 
         {/* Toast Notifications */}
         <ToastContainer toasts={toasts} onClose={hideToast} />
+
+        {/* Confirm Dialog */}
+        <ConfirmDialog
+          isOpen={confirmDialog.isOpen}
+          onClose={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+          onConfirm={confirmDialog.onConfirm}
+          title={confirmDialog.title}
+          message={confirmDialog.message}
+          variant={confirmDialog.variant}
+        />
       </main>
     </div>
   )

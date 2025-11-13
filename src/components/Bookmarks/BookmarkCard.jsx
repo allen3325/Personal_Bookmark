@@ -40,19 +40,47 @@ export const BookmarkCard = memo(function BookmarkCard({
   onTogglePriority,
   onAddTag,
   onRemoveTag,
+  allTags = [],
 }) {
   const [showNotes, setShowNotes] = useState(false)
   const [newTag, setNewTag] = useState('')
   const [showTagInput, setShowTagInput] = useState(false)
+  const [showSuggestions, setShowSuggestions] = useState(false)
 
   const StatusIcon = statusConfig[bookmark.status]?.icon || Circle
   const statusColor = statusConfig[bookmark.status]?.color || 'text-gray-400'
 
-  const handleAddTag = () => {
-    if (newTag.trim()) {
-      onAddTag(bookmark.id, newTag.trim())
+  // Filter suggestions based on input
+  const tagSuggestions = newTag.trim()
+    ? allTags
+        .filter((tag) => {
+          const tagName = typeof tag === 'string' ? tag : tag.name
+          return (
+            tagName.toLowerCase().includes(newTag.toLowerCase()) &&
+            !bookmark.tags?.includes(tagName)
+          )
+        })
+        .slice(0, 5)
+    : []
+
+  const handleAddTag = (tagToAdd = newTag) => {
+    const tag = tagToAdd.trim()
+    if (tag && !bookmark.tags?.includes(tag)) {
+      onAddTag(bookmark.id, tag)
       setNewTag('')
       setShowTagInput(false)
+      setShowSuggestions(false)
+    }
+  }
+
+  const handleTagInputKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      handleAddTag()
+    } else if (e.key === 'Escape') {
+      setShowTagInput(false)
+      setNewTag('')
+      setShowSuggestions(false)
     }
   }
 
@@ -131,31 +159,63 @@ export const BookmarkCard = memo(function BookmarkCard({
 
           {/* Add Tag Input */}
           {showTagInput ? (
-            <div className="flex gap-2 mb-3">
-              <input
-                type="text"
-                value={newTag}
-                onChange={(e) => setNewTag(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleAddTag()}
-                placeholder="New tag..."
-                className="px-2 py-1 text-sm border rounded dark:bg-gray-700 dark:border-gray-600"
-                autoFocus
-              />
-              <button
-                onClick={handleAddTag}
-                className="text-sm text-blue-600 hover:text-blue-700"
-              >
-                Add
-              </button>
-              <button
-                onClick={() => {
-                  setShowTagInput(false)
-                  setNewTag('')
-                }}
-                className="text-sm text-gray-500 hover:text-gray-700"
-              >
-                Cancel
-              </button>
+            <div className="relative mb-3">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newTag}
+                  onChange={(e) => {
+                    setNewTag(e.target.value)
+                    setShowSuggestions(true)
+                  }}
+                  onKeyDown={handleTagInputKeyDown}
+                  onFocus={() => setShowSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                  placeholder="Type tag name... (Enter to add, Esc to cancel)"
+                  className="flex-1 px-2 py-1 text-sm border rounded dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  autoFocus
+                />
+                <button
+                  onClick={() => handleAddTag()}
+                  className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 px-2"
+                >
+                  Add
+                </button>
+                <button
+                  onClick={() => {
+                    setShowTagInput(false)
+                    setNewTag('')
+                    setShowSuggestions(false)
+                  }}
+                  className="text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 px-2"
+                >
+                  Cancel
+                </button>
+              </div>
+
+              {/* Autocomplete Suggestions */}
+              {showSuggestions && tagSuggestions.length > 0 && (
+                <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded shadow-lg max-h-32 overflow-y-auto">
+                  {tagSuggestions.map((tag) => {
+                    const tagName = typeof tag === 'string' ? tag : tag.name
+                    const tagCount = typeof tag === 'object' ? tag.count : null
+                    return (
+                      <button
+                        key={tagName}
+                        onClick={() => handleAddTag(tagName)}
+                        className="w-full px-3 py-2 text-sm text-left hover:bg-gray-100 dark:hover:bg-gray-600 flex justify-between items-center"
+                      >
+                        <span className="text-gray-900 dark:text-gray-100">{tagName}</span>
+                        {tagCount && (
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            {tagCount} bookmark{tagCount !== 1 ? 's' : ''}
+                          </span>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           ) : (
             <button
@@ -197,38 +257,50 @@ export const BookmarkCard = memo(function BookmarkCard({
         <div className="flex flex-col gap-2">
           <button
             onClick={cycleStatus}
-            className={`p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${statusColor}`}
-            title={statusConfig[bookmark.status]?.label}
+            className={`group relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${statusColor}`}
+            aria-label={statusConfig[bookmark.status]?.label}
           >
             <StatusIcon className="w-5 h-5" />
+            <span className="absolute right-full mr-2 px-2 py-1 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+              {statusConfig[bookmark.status]?.label}
+            </span>
           </button>
 
           <button
             onClick={() => onTogglePriority(bookmark.id, bookmark.priority)}
-            className={`p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
+            className={`group relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
               bookmark.priority === 1
                 ? 'text-yellow-500'
                 : 'text-gray-400'
             }`}
-            title={bookmark.priority === 1 ? 'Unpin' : 'Pin'}
+            aria-label={bookmark.priority === 1 ? 'Unpin' : 'Pin'}
           >
-            <Star className={bookmark.priority === 1 ? 'fill-current' : ''} />
+            <Star className={bookmark.priority === 1 ? 'fill-current w-5 h-5' : 'w-5 h-5'} />
+            <span className="absolute right-full mr-2 px-2 py-1 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+              {bookmark.priority === 1 ? 'Unpin' : 'Pin'}
+            </span>
           </button>
 
           <button
             onClick={() => onEdit(bookmark)}
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-400"
-            title="Edit"
+            className="group relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-400"
+            aria-label="Edit"
           >
             <Edit2 className="w-5 h-5" />
+            <span className="absolute right-full mr-2 px-2 py-1 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+              Edit
+            </span>
           </button>
 
           <button
             onClick={() => onDelete(bookmark.id)}
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-red-600 dark:text-red-400"
-            title="Delete"
+            className="group relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-red-600 dark:text-red-400"
+            aria-label="Delete"
           >
             <Trash2 className="w-5 h-5" />
+            <span className="absolute right-full mr-2 px-2 py-1 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+              Delete
+            </span>
           </button>
         </div>
       </div>
